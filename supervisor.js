@@ -49,6 +49,7 @@
     queueWrap: document.getElementById('queue-wrap'),
     queue: document.getElementById('queue'),
     queueCount: document.getElementById('queue-count'),
+    queueSummary: document.getElementById('queue-summary'),
     rvBack: document.getElementById('rv-back'),
     rvInfo: document.getElementById('rv-info'),
     rvGallery: document.getElementById('rv-gallery'),
@@ -99,6 +100,12 @@
     var dot = n.lastIndexOf('.'); if (dot > 0) n = n.slice(0, dot);
     if (folderBase && n.indexOf(folderBase + '-') === 0) n = n.slice(folderBase.length + 1);
     return n || name;
+  }
+  // 不打开复检即可统计:一张「瑕疵」照片记为一处瑕疵(与 ensureDefects 口径一致)。
+  function defectCountOf(u) {
+    return u.imageEntries.filter(function (e) {
+      return classifyEntry(e.path, u.folderBase) === 'defect';
+    }).length;
   }
   function partRank(label) {
     var i = PART_ORDER.indexOf(label);
@@ -298,6 +305,49 @@
           '<button class="unit__del" data-del="' + i + '" aria-label="移除">✕</button>' +
         '</div>';
     }).join('');
+    renderSummary();
+  }
+
+  // 汇总:导入的全部 ZIP 共多少台、合计多少处瑕疵,并逐台列出瑕疵数。
+  function renderSummary() {
+    if (!els.queueSummary) return;
+    var units = state.units;
+    if (!units.length) { els.queueSummary.innerHTML = ''; return; }
+
+    var rows = units.map(function (u) { return { u: u, n: defectCountOf(u) }; });
+    var totalDefects = rows.reduce(function (s, r) { return s + r.n; }, 0);
+    var machinesWithDefect = rows.filter(function (r) { return r.n > 0; }).length;
+
+    var stats =
+      '<div class="summary__stats">' +
+        '<div class="summary__stat">' +
+          '<div class="summary__num">' + units.length + '</div>' +
+          '<div class="summary__lbl">导入台数</div>' +
+        '</div>' +
+        '<div class="summary__stat bad">' +
+          '<div class="summary__num">' + totalDefects + '</div>' +
+          '<div class="summary__lbl">瑕疵总数</div>' +
+        '</div>' +
+        '<div class="summary__stat bad">' +
+          '<div class="summary__num">' + machinesWithDefect + '</div>' +
+          '<div class="summary__lbl">有瑕疵台数</div>' +
+        '</div>' +
+      '</div>';
+
+    var list = rows.map(function (r) {
+      var name = r.u.model || r.u.folderBase || r.u.fileName;
+      var unitTxt = r.u.unit ? ' <span>编号 ' + escapeHtml(r.u.unit) + '</span>' : '';
+      var countCls = r.n > 0 ? 'summary__row-count' : 'summary__row-count zero';
+      var countTxt = r.n > 0 ? (r.n + ' 处瑕疵') : '无瑕疵';
+      return '<div class="summary__row">' +
+          '<div class="summary__row-name">' + escapeHtml(name) + unitTxt + '</div>' +
+          '<div class="' + countCls + '">' + countTxt + '</div>' +
+        '</div>';
+    }).join('');
+
+    els.queueSummary.innerHTML = stats +
+      '<div class="summary__h">逐台明细</div>' +
+      '<div class="summary__list">' + list + '</div>';
   }
 
   // ---------- review view ----------
