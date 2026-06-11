@@ -8,6 +8,9 @@
   <title>HY 质检通</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css?v=19" />
+  <!-- 登录门：未登录前先隐藏页面，避免内容闪一下 -->
+  <style>html.qc-gate body{visibility:hidden}</style>
+  <script>document.documentElement.classList.add('qc-gate');window.QC_AUTH={roles:['inspector','supervisor'],title:'HY 质检通'};</script>
 </head>
 <body>
   <header class="app-header">
@@ -39,7 +42,7 @@
       <div class="field">
         <label for="inspector-input">质检员姓名</label>
         <input id="inspector-input" type="text" inputmode="text" autocomplete="off"
-               enterkeyhint="next" placeholder="例如：张三" />
+               enterkeyhint="next" placeholder="例如：张三" data-qc-fill="name" />
       </div>
       <p class="folder-preview" id="folder-preview" aria-live="polite"></p>
     </section>
@@ -170,6 +173,7 @@
   <!-- Lightweight toast -->
   <div class="toast" id="toast" hidden aria-live="polite"></div>
 
+  <script defer src="auth.js?v=1"></script>
   <script defer src="lib/jsqr.min.js"></script>
   <script defer src="lib/jszip.min.js"></script>
   <script defer src="lib/aliyun-oss-sdk.min.js"></script>
